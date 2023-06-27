@@ -34,7 +34,7 @@ func New(
 	a := api{
 		restHost:       restHost,
 		restController: restController,
-		restServer:     gin.Default(),
+		restServer:     gin.New(),
 	}
 
 	a.initRest()
