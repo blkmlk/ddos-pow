@@ -15,3 +15,7 @@ type PostChallengeRequest struct {
 	Solution string `json:"solution"`
 	Salt     string `json:"salt"`
 }
+
+type PostChallengeResponse struct {
+	Quote string `json:"quote"`
+}

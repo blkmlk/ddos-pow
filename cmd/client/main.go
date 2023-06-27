@@ -42,11 +42,12 @@ func main() {
 		enSolution := base64.StdEncoding.EncodeToString(solution)
 		enSalt := base64.StdEncoding.EncodeToString(salt)
 
-		if err = sendSolution(ctx, host, challenge.ID, enSolution, enSalt); err != nil {
+		quote, err := sendSolution(ctx, host, challenge.ID, enSolution, enSalt)
+		if err != nil {
 			log.Fatal(err)
 		}
 
-		log.Printf("solution found in %v", elapsed)
+		log.Printf("(%s) solution found in %v", quote, elapsed)
 	}
 }
 
@@ -74,7 +75,7 @@ func getChallenge(ctx context.Context, host string) (*controllers.GetChallengeRe
 	return &body, nil
 }
 
-func sendSolution(ctx context.Context, host string, id, solution, salt string) error {
+func sendSolution(ctx context.Context, host string, id, solution, salt string) (string, error) {
 	request := controllers.PostChallengeRequest{
 		ID:       id,
 		Solution: solution,
@@ -83,24 +84,29 @@ func sendSolution(ctx context.Context, host string, id, solution, salt string) e
 
 	body, err := json.Marshal(&request)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	hostUrl := fmt.Sprintf("http://%s%s", host, api.PathPostChallenge)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, hostUrl, bytes.NewReader(body))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
-	return nil
+
+	var response controllers.PostChallengeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return "", err
+	}
+	return response.Quote, nil
 }
 
 func findSolution(challenge *controllers.GetChallengeResponse) ([]byte, []byte, error) {

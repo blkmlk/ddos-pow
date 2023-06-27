@@ -107,5 +107,9 @@ func (c *RestController) PostChallenge(ctx *gin.Context) {
 		return
 	}
 
-	ctx.Status(http.StatusOK)
+	quote := getRandomQuote()
+
+	ctx.JSON(http.StatusOK, PostChallengeResponse{
+		Quote: quote,
+	})
 }
