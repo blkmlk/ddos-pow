@@ -1,0 +1,12 @@
+version: '3'
+services:
+  server:
+    image: ddos-pow:latest
+    environment:
+      - REST_HOST=:9090
+    entrypoint: ["/server"]
+  client:
+    image: ddos-pow:latest
+    environment:
+      - REST_HOST=server:9090
+    entrypoint: ["/client"]

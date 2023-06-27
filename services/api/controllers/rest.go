@@ -101,9 +101,6 @@ func (c *RestController) PostChallenge(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Printf("%+v\n", localSol)
-	fmt.Printf("%+v\n", solution)
-
 	if !bytes.Equal(localSol, solution) {
 		fmt.Println("2")
 		ctx.Status(http.StatusForbidden)

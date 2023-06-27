@@ -24,9 +24,12 @@ func main() {
 	}
 
 	for {
+		time.Sleep(time.Second)
+
 		challenge, err := getChallenge(ctx, host)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err.Error())
+			continue
 		}
 
 		started := time.Now()
@@ -44,8 +47,6 @@ func main() {
 		}
 
 		log.Printf("solution found in %v", elapsed)
-
-		time.Sleep(time.Second)
 	}
 }
 
