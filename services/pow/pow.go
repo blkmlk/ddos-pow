@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	PuzzleLength = 50
+	PuzzleLength = 8
 )
 
 type GenerateSolutionInput struct {
