@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/client"
 	"go.uber.org/zap"
@@ -23,7 +24,12 @@ func main() {
 	for {
 		quote, err := c.GetQuote()
 		if err != nil {
-			log.Error(err)
+			switch {
+			case errors.Is(err, client.ErrTerminated):
+				log.Error("connection has been terminated")
+			default:
+				log.Error(err)
+			}
 		}
 
 		log.Infof("successfully got quote: %s", quote)
