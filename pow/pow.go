@@ -29,29 +29,29 @@ type Config struct {
 }
 
 type POW struct {
-	config Config
+	Config Config
 }
 
 func New(config Config) *POW {
-	return &POW{config: config}
+	return &POW{Config: config}
 }
 
 func (p *POW) NewSignedChallenge() Challenge {
 	ch := Challenge{
 		Puzzle:    GeneratePuzzle(),
-		ExpiresAt: time.Now().Add(p.config.Timeout).UnixNano(),
-		N:         p.config.N,
-		R:         p.config.R,
-		P:         p.config.P,
-		KeyLen:    p.config.KeyLen,
-		MinZeroes: p.config.MinZeroes,
+		ExpiresAt: time.Now().Add(p.Config.Timeout).UnixNano(),
+		N:         p.Config.N,
+		R:         p.Config.R,
+		P:         p.Config.P,
+		KeyLen:    p.Config.KeyLen,
+		MinZeroes: p.Config.MinZeroes,
 	}
-	ch.Signature = ch.Sign(p.config.Secret)
+	ch.Signature = ch.Sign(p.Config.Secret)
 	return ch
 }
 
 func (p *POW) VerifyChallenge(ch *Challenge) (bool, error) {
-	validSignature := ch.Sign(p.config.Secret)
+	validSignature := ch.Sign(p.Config.Secret)
 	if !bytes.Equal(validSignature, ch.Signature) {
 		return false, nil
 	}

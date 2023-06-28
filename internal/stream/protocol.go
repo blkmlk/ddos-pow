@@ -54,7 +54,7 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 func (s *stream) ReadUntil(maxLen int, maxTimeout time.Duration) ([]byte, error) {
 	startedAt := time.Now()
 	for {
-		data, err := s.Read(maxLen, time.Millisecond*100)
+		data, err := s.Read(maxLen, time.Millisecond*50)
 		if err != nil {
 			return nil, err
 		}
