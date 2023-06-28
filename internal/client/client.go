@@ -7,7 +7,6 @@ import (
 	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
 	"io"
-	"log"
 	"net"
 	"time"
 )
@@ -33,7 +32,7 @@ func New(host string) *Client {
 func (c *Client) GetQuote() (string, error) {
 	conn, err := net.Dial("tcp", c.host)
 	if err != nil {
-		log.Fatal("Connection error", err)
+		return "", fmt.Errorf("failed to connect to the server: %v", err)
 	}
 
 	defer conn.Close()

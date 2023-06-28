@@ -23,7 +23,7 @@ func main() {
 	for {
 		quote, err := c.GetQuote()
 		if err != nil {
-			log.With("error", err).Error("failed to get quote")
+			log.Error(err)
 		}
 
 		log.Infof("successfully got quote: %s", quote)
