@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/helpers"
-	"github.com/blkmlk/ddos-pow/internal/protocol"
+	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
 	"log"
 	"net"
@@ -30,7 +30,7 @@ func getQuote(host string) {
 
 	defer conn.Close()
 
-	inst := protocol.New(conn)
+	inst := stream.New(conn)
 
 	data, err := inst.Read(pow.ChallengeMaxLength)
 	if err != nil {

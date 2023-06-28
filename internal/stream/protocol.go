@@ -1,4 +1,4 @@
-package protocol
+package stream
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type instance struct {
+type stream struct {
 	conn net.Conn
 }
 
@@ -16,14 +16,14 @@ var (
 	ErrMaxLenExceeded = errors.New("max length exceeded")
 )
 
-func New(conn net.Conn) *instance {
-	return &instance{
+func New(conn net.Conn) *stream {
+	return &stream{
 		conn: conn,
 	}
 }
 
-func (i *instance) Read(maxLen int) ([]byte, error) {
-	const chunkSize = 1024
+func (i *stream) Read(maxLen int) ([]byte, error) {
+	const chunkSize = 256
 	buff := make([]byte, chunkSize)
 	var result bytes.Buffer
 
@@ -44,7 +44,7 @@ func (i *instance) Read(maxLen int) ([]byte, error) {
 	return result.Bytes(), nil
 }
 
-func (i *instance) Write(data []byte) error {
+func (i *stream) Write(data []byte) error {
 	_, err := i.conn.Write(data)
 	return err
 }

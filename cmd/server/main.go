@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/helpers"
-	"github.com/blkmlk/ddos-pow/internal/protocol"
 	"github.com/blkmlk/ddos-pow/internal/quotes"
+	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
 	"log"
 	"net"
@@ -22,7 +22,7 @@ func NewServer(config pow.Config) *Server {
 
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	inst := protocol.New(conn)
+	inst := stream.New(conn)
 
 	ch := s.powClient.NewSignedChallenge()
 	data := helpers.ChallengeToBytes(&ch)
