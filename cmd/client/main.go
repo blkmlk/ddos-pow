@@ -1,138 +1,79 @@
 package main
 
 import (
-	"bytes"
-	"context"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
 	"github.com/blkmlk/ddos-pow/env"
-	pow2 "github.com/blkmlk/ddos-pow/pow"
-	"github.com/blkmlk/ddos-pow/services/api"
-	"github.com/blkmlk/ddos-pow/services/api/controllers"
-	"github.com/blkmlk/ddos-pow/services/pow"
+	"github.com/blkmlk/ddos-pow/internal/helpers"
+	"github.com/blkmlk/ddos-pow/internal/protocol"
+	"github.com/blkmlk/ddos-pow/pow"
 	"log"
-	"net/http"
+	"net"
 	"time"
 )
 
 func main() {
-	ctx := context.Background()
-
-	host, err := env.Get(env.RestHost)
+	host, err := env.Get(env.Host)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for {
+		getQuote(host)
 		time.Sleep(time.Second)
-
-		challenge, err := getChallenge(ctx, host)
-		if err != nil {
-			log.Println(err.Error())
-			continue
-		}
-
-		started := time.Now()
-		solution, salt, err := findSolution(challenge)
-		elapsed := time.Since(started)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		enSolution := base64.StdEncoding.EncodeToString(solution)
-		enSalt := base64.StdEncoding.EncodeToString(salt)
-
-		quote, err := sendSolution(ctx, host, challenge.ID, enSolution, enSalt)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Printf("(%s) solution found in %v", quote, elapsed)
 	}
 }
 
-func getChallenge(ctx context.Context, host string) (*controllers.GetChallengeResponse, error) {
-	hostUrl := fmt.Sprintf("http://%s%s", host, api.PathGetChallenge)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, hostUrl, nil)
+func getQuote(host string) {
+	conn, err := net.Dial("tcp", host)
 	if err != nil {
-		return nil, err
+		log.Fatal("Connection error", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	defer conn.Close()
+
+	inst := protocol.New(conn)
+
+	data, err := inst.Read(pow.ChallengeMaxLength)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
+		return
 	}
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("unexpected code %d", resp.StatusCode)
-	}
-
-	var body controllers.GetChallengeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, err
-	}
-
-	return &body, nil
-}
-
-func sendSolution(ctx context.Context, host string, id, solution, salt string) (string, error) {
-	request := controllers.PostChallengeRequest{
-		ID:       id,
-		Solution: solution,
-		Salt:     salt,
-	}
-
-	body, err := json.Marshal(&request)
+	challenge, err := helpers.ChallengeFromBytes(data)
 	if err != nil {
-		return "", err
+		log.Fatal(err)
+		return
 	}
 
-	hostUrl := fmt.Sprintf("http://%s%s", host, api.PathPostChallenge)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, hostUrl, bytes.NewReader(body))
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	var response controllers.PostChallengeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", err
-	}
-	return response.Quote, nil
-}
-
-func findSolution(challenge *controllers.GetChallengeResponse) ([]byte, []byte, error) {
-	input := pow.GenerateSolutionInput{
-		Puzzle: challenge.Puzzle,
-		N:      challenge.N,
-		R:      challenge.R,
-		P:      challenge.P,
-		KeyLen: challenge.KeyLen,
-	}
+	startedAt := time.Now()
 	for {
-		salt, err := pow.GenerateSalt()
+		solution, err := challenge.GenerateSolution()
 		if err != nil {
-			return nil, nil, err
+			log.Fatal(err)
+			return
 		}
+		if pow.VerifySolution(solution, int(challenge.MinZeroes)) {
+			break
+		}
+		challenge.Salt++
+	}
+	elapsed := time.Since(startedAt)
 
-		input.Salt = salt
+	if err = inst.Write(helpers.ChallengeToBytes(challenge)); err != nil {
+		log.Fatal(err)
+		return
+	}
 
-		solution, err := pow.GenerateSolution(input)
+	var quote string
+	for {
+		rawQuote, err := inst.Read(0)
 		if err != nil {
-			return nil, nil, err
+			log.Fatal(err)
 		}
-
-		if pow2.VerifySolution(solution, challenge.MinZeroes) {
-			return solution, salt, nil
+		if len(rawQuote) > 0 {
+			quote = string(rawQuote)
+			break
 		}
 	}
+
+	log.Printf("found (%s) solution in %v", quote, elapsed)
 }

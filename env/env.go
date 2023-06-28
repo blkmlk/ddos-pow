@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	RestHost = "REST_HOST"
+	Host = "REST_HOST"
 )
 
 func NewErrNotSet(env string) error {

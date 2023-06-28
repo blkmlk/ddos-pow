@@ -12,7 +12,10 @@ import (
 )
 
 const (
-	PuzzleLength = 20
+	SignatureLength = 32
+	// ChallengeMaxLength sha256 + PuzzleLength + ExpiresAt + N + R + P + KeyLen + MinZeroes + Salt
+	ChallengeMaxLength = SignatureLength + PuzzleLength*8 + 7*8
+	PuzzleLength       = 20
 )
 
 type Config struct {
@@ -35,7 +38,7 @@ func New(config Config) *POW {
 
 func (p *POW) NewSignedChallenge() Challenge {
 	ch := Challenge{
-		Puzzle:    p.generatePuzzle(),
+		Puzzle:    GeneratePuzzle(),
 		ExpiresAt: time.Now().Add(p.config.timeout).Unix(),
 		N:         p.config.N,
 		R:         p.config.R,
@@ -62,12 +65,6 @@ func (p *POW) VerifyChallenge(ch *Challenge) (bool, error) {
 		return false, nil
 	}
 	return true, nil
-}
-
-func (p *POW) generatePuzzle() []byte {
-	puzzle := make([]byte, PuzzleLength)
-	_, _ = rand.Read(puzzle)
-	return puzzle
 }
 
 type Challenge struct {
@@ -112,6 +109,12 @@ func (c *Challenge) Sign(secret []byte) []byte {
 	h.Write(secret)
 
 	return h.Sum(nil)
+}
+
+func GeneratePuzzle() []byte {
+	puzzle := make([]byte, PuzzleLength)
+	_, _ = rand.Read(puzzle)
+	return puzzle
 }
 
 func (c *Challenge) GenerateSolution() ([]byte, error) {
