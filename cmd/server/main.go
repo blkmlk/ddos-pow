@@ -4,8 +4,8 @@ import (
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/helpers"
 	"github.com/blkmlk/ddos-pow/internal/protocol"
+	"github.com/blkmlk/ddos-pow/internal/quotes"
 	"github.com/blkmlk/ddos-pow/pow"
-	"github.com/blkmlk/ddos-pow/quotes"
 	"log"
 	"net"
 )
@@ -62,7 +62,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	quote := quotes.getRandomQuote()
+	quote := quotes.GetRandomQuote()
 	if err := inst.Write([]byte(quote)); err != nil {
 		log.Fatal(err)
 		return

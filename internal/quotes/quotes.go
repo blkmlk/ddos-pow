@@ -43,7 +43,7 @@ var quotes = []string{
 	"This too shall pass",
 }
 
-func getRandomQuote() string {
+func GetRandomQuote() string {
 	r := rand.New(rand.NewSource(time.Now().UnixMilli()))
 	return quotes[r.Intn(len(quotes))]
 }
