@@ -50,7 +50,7 @@ func (s *Server) Start() error {
 			defer s.wg.Done()
 			err = s.handleConnection(conn)
 			if err != nil {
-				s.log.With("error", err).Error("failed to handle connection")
+				s.log.Warn(err, "failed to handle connection")
 			}
 		}()
 	}

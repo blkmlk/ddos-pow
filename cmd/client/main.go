@@ -24,12 +24,11 @@ func main() {
 	for {
 		quote, err := c.GetQuote()
 		if err != nil {
-			switch {
-			case errors.Is(err, client.ErrTerminated):
-				log.Error("connection has been terminated")
-			default:
-				log.Error(err)
+			if errors.Is(err, client.ErrTerminated) {
+				log.Warn("connection has been terminated")
+				continue
 			}
+			log.Fatal(err)
 		}
 
 		log.Infof("successfully got quote: %s", quote)
