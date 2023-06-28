@@ -18,6 +18,8 @@ func main() {
 
 	c := client.New(host)
 
+	log.Info("starting the client...")
+
 	for {
 		quote, err := c.GetQuote()
 		if err != nil {
