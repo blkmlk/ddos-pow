@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/blkmlk/ddos-pow/env"
+	pow2 "github.com/blkmlk/ddos-pow/pow"
 	"github.com/blkmlk/ddos-pow/services/api"
 	"github.com/blkmlk/ddos-pow/services/api/controllers"
 	"github.com/blkmlk/ddos-pow/services/pow"
@@ -130,7 +131,7 @@ func findSolution(challenge *controllers.GetChallengeResponse) ([]byte, []byte, 
 			return nil, nil, err
 		}
 
-		if pow.VerifySolution(solution, challenge.MinZeroes) {
+		if pow2.VerifySolution(solution, challenge.MinZeroes) {
 			return solution, salt, nil
 		}
 	}
