@@ -28,5 +28,5 @@ func TestPOW(t *testing.T) {
 		}
 		challenge.Salt++
 	}
-	t.Logf("soultion found in %v", time.Since(startedAt))
+	t.Logf("salt %d found in %v", challenge.Salt, time.Since(startedAt))
 }
