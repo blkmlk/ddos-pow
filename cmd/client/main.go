@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/helpers"
 	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -32,8 +34,11 @@ func getQuote(host string) {
 
 	inst := stream.New(conn)
 
-	data, err := inst.Read(pow.ChallengeMaxLength)
+	data, err := inst.ReadUntil(pow.ChallengeMaxLength, time.Second*5)
 	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return
+		}
 		log.Fatal(err)
 		return
 	}
@@ -58,22 +63,20 @@ func getQuote(host string) {
 	}
 	elapsed := time.Since(startedAt)
 
+	log.Printf("found solution in %v", elapsed)
+
 	if err = inst.Write(helpers.ChallengeToBytes(challenge)); err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	var quote string
-	for {
-		rawQuote, err := inst.Read(0)
-		if err != nil {
-			log.Fatal(err)
+	rawQuote, err := inst.ReadUntil(0, time.Second*5)
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return
 		}
-		if len(rawQuote) > 0 {
-			quote = string(rawQuote)
-			break
-		}
+		log.Fatal(err)
 	}
 
-	log.Printf("found (%s) solution in %v", quote, elapsed)
+	log.Printf("found %s", string(rawQuote))
 }

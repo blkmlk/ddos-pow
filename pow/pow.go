@@ -19,8 +19,8 @@ const (
 )
 
 type Config struct {
-	secret    []byte
-	timeout   time.Duration
+	Secret    []byte
+	Timeout   time.Duration
 	N         int64
 	R         int64
 	P         int64
@@ -39,19 +39,19 @@ func New(config Config) *POW {
 func (p *POW) NewSignedChallenge() Challenge {
 	ch := Challenge{
 		Puzzle:    GeneratePuzzle(),
-		ExpiresAt: time.Now().Add(p.config.timeout).Unix(),
+		ExpiresAt: time.Now().Add(p.config.Timeout).UnixNano(),
 		N:         p.config.N,
 		R:         p.config.R,
 		P:         p.config.P,
 		KeyLen:    p.config.KeyLen,
 		MinZeroes: p.config.MinZeroes,
 	}
-	ch.Signature = ch.Sign(p.config.secret)
+	ch.Signature = ch.Sign(p.config.Secret)
 	return ch
 }
 
 func (p *POW) VerifyChallenge(ch *Challenge) (bool, error) {
-	validSignature := ch.Sign(p.config.secret)
+	validSignature := ch.Sign(p.config.Secret)
 	if !bytes.Equal(validSignature, ch.Signature) {
 		return false, nil
 	}

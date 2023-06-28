@@ -3,7 +3,6 @@ package stream
 import (
 	"bytes"
 	"errors"
-	"io"
 	"net"
 	"time"
 )
@@ -13,6 +12,7 @@ type stream struct {
 }
 
 var (
+	ErrExpired        = errors.New("expired")
 	ErrMaxLenExceeded = errors.New("max length exceeded")
 )
 
@@ -22,16 +22,22 @@ func New(conn net.Conn) *stream {
 	}
 }
 
-func (i *stream) Read(maxLen int) ([]byte, error) {
-	const chunkSize = 256
-	buff := make([]byte, chunkSize)
+func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
+	buff := make([]byte, 256)
 	var result bytes.Buffer
 
 	read := 0
 	for {
-		i.conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
-		n, err := i.conn.Read(buff)
-		if errors.Is(err, io.EOF) || n == 0 {
+		_ = s.conn.SetReadDeadline(time.Now().Add(timeout))
+
+		n, err := s.conn.Read(buff)
+		if err != nil {
+			if e, ok := err.(net.Error); ok && e.Timeout() {
+				break
+			}
+			return nil, err
+		}
+		if n == 0 {
 			break
 		}
 
@@ -40,11 +46,30 @@ func (i *stream) Read(maxLen int) ([]byte, error) {
 			return nil, ErrMaxLenExceeded
 		}
 		result.Write(buff[:n])
+		buff = buff[:0]
 	}
 	return result.Bytes(), nil
 }
 
-func (i *stream) Write(data []byte) error {
-	_, err := i.conn.Write(data)
+func (s *stream) ReadUntil(maxLen int, maxTimeout time.Duration) ([]byte, error) {
+	startedAt := time.Now()
+	for {
+		data, err := s.Read(maxLen, time.Millisecond*100)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(data) > 0 {
+			return data, nil
+		}
+
+		if time.Since(startedAt) > maxTimeout {
+			return nil, ErrExpired
+		}
+	}
+}
+
+func (s *stream) Write(data []byte) error {
+	_, err := s.conn.Write(data)
 	return err
 }
