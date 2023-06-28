@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/server"
 	"github.com/blkmlk/ddos-pow/pow"
-	"log"
+	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +12,9 @@ import (
 )
 
 func main() {
+	logDev, _ := zap.NewDevelopment()
+	log := logDev.Sugar()
+
 	host, err := env.Get(env.Host)
 	if err != nil {
 		log.Fatal(err)
@@ -28,8 +30,10 @@ func main() {
 		MinZeroes: 12,
 	})
 
+	log.With("host", host).Info("starting the server...")
+
 	if err := s.Start(); err != nil {
-		log.Fatal(err)
+		log.With("error", err).Fatal("failed to start the server")
 	}
 
 	ch := make(chan os.Signal)
@@ -37,10 +41,10 @@ func main() {
 
 	go func() {
 		<-ch
-		fmt.Println("stopping the server")
+		log.Infof("got signal to stop the server")
 
 		if err := s.Stop(); err != nil {
-			log.Fatal(err)
+			log.With("error", err).Fatal("failed to stop the server")
 		}
 	}()
 }
