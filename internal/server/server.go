@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+const (
+	NetworkDelay = time.Millisecond * 500
+)
+
 type Server struct {
 	host      string
 	powClient *pow.POW
@@ -77,7 +81,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	data := helpers.ChallengeToBytes(&challenge)
 
 	// sending a new generated challenge
-	if err := strm.Write(data, time.Second); err != nil {
+	if err := strm.Write(data, NetworkDelay); err != nil {
 		if clientNetworkErr(err) {
 			return nil
 		}
@@ -85,7 +89,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	}
 
 	// puzzle timeout + network delay
-	timeout := s.powClient.Config.Timeout + time.Millisecond*500
+	timeout := s.powClient.Config.Timeout + NetworkDelay
 	received, err := strm.Read(pow.ChallengeMaxLength, timeout)
 	if err != nil {
 		if clientNetworkErr(err) {
@@ -121,7 +125,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 
 	// sending the quote
 	quote := quotes.GetRandomQuote()
-	if err = strm.Write([]byte(quote), time.Second); err != nil {
+	if err = strm.Write([]byte(quote), NetworkDelay); err != nil {
 		if clientNetworkErr(err) {
 			return nil
 		}
