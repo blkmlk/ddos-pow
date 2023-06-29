@@ -73,6 +73,9 @@ func (s *Server) handleConnection(conn net.Conn) error {
 
 	// sending a new generated challenge
 	if err := strm.Write(data, time.Second); err != nil {
+		if clientNetworkErr(err) {
+			return nil
+		}
 		return fmt.Errorf("failed to send challenge to solve: %v", err)
 	}
 
@@ -80,12 +83,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	timeout := s.powClient.Config.Timeout + time.Millisecond*500
 	received, err := strm.Read(pow.ChallengeMaxLength, timeout)
 	if err != nil {
-		// client closed the connection themselves - ignore it
-		if errors.Is(err, io.EOF) {
-			return nil
-		}
-		// client is too slow - close the connection
-		if e, ok := err.(net.Error); ok && e.Timeout() {
+		if clientNetworkErr(err) {
 			return nil
 		}
 		return fmt.Errorf("failed to read challenge: %v", err)
@@ -114,8 +112,23 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	// sending the quote
 	quote := quotes.GetRandomQuote()
 	if err = strm.Write([]byte(quote), time.Second); err != nil {
+		if clientNetworkErr(err) {
+			return nil
+		}
 		return fmt.Errorf("failed to send quote: %v", err)
 	}
 
 	return nil
+}
+
+func clientNetworkErr(err error) bool {
+	// client closed the connection themselves - close the connection
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	// client is too slow - close the connection
+	if e, ok := err.(net.Error); ok && e.Timeout() {
+		return true
+	}
+	return false
 }
