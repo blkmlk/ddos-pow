@@ -1,8 +1,10 @@
 package pow_test
 
 import (
+	"encoding/binary"
 	"github.com/blkmlk/ddos-pow/pow"
 	"github.com/stretchr/testify/require"
+	"math"
 	"testing"
 	"time"
 )
@@ -46,4 +48,14 @@ func TestPOW(t *testing.T) {
 	valid, err = p.VerifyChallenge(&challenge)
 	require.NoError(t, err)
 	require.False(t, valid)
+}
+
+func TestVerifySolution(t *testing.T) {
+	sol64 := make([]byte, 8)
+	binary.BigEndian.PutUint64(sol64, math.MaxUint64)
+	require.False(t, pow.VerifySolution(sol64, 1))
+
+	sol63 := make([]byte, 8)
+	binary.BigEndian.PutUint64(sol63, math.MaxInt64)
+	require.True(t, pow.VerifySolution(sol63, 1))
 }
