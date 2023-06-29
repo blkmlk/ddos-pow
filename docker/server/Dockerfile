@@ -5,10 +5,10 @@ ADD . .
 
 RUN set -x \
     && export CGO_ENABLED=0 \
-    && go build -v -ldflags "${LDFLAGS}" -o /app cmd/server/main.go
+    && go build -v -ldflags "${LDFLAGS}" -o /out cmd/server/main.go
 
 FROM alpine:3.15
 
-COPY --from=builder /app /app
+COPY --from=builder /out /app
 
 CMD ["/app"]

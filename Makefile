@@ -6,7 +6,7 @@ build:
 .PHONY: run
 run:
 	@echo 'Running locally...'
-	docker-compose -p test up
+	docker-compose up --build
 
 .PHONY: test
 test:
