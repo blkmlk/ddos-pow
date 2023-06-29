@@ -28,6 +28,7 @@ type Config struct {
 	MinZeroes int64
 }
 
+// POW TODO: use interface instead and different PoW implementations
 type POW struct {
 	Config Config
 }
