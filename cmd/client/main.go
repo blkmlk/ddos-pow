@@ -22,17 +22,18 @@ func main() {
 	log.Info("starting the client...")
 
 	for {
+		time.Sleep(time.Second)
+
 		quote, err := c.GetQuote()
 		if err != nil {
 			if errors.Is(err, client.ErrTerminated) {
 				log.Info("connection has been terminated")
-				continue
+			} else {
+				log.With("error", err).Error("failed to connect to the server")
 			}
-			log.Fatal(err)
+			continue
 		}
 
 		log.Infof("successfully got quote: %s", quote)
-
-		time.Sleep(time.Second)
 	}
 }
