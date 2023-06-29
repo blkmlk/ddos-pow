@@ -99,6 +99,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 		return fmt.Errorf("failed to get challenge from bytes: %v", err)
 	}
 
+	// checking if the challenge is not what we just sent
 	if !bytes.Equal(challenge.Signature, solvedChallenge.Signature) {
 		return fmt.Errorf("received a wrong challenge")
 	}
