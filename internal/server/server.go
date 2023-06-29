@@ -89,7 +89,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 
 	// puzzle timeout + network delay
 	timeToSolve := challenge.GetExpiresAt().Sub(time.Now()) + NetworkDelay
-	received, err := strm.Read(pow.ChallengeMaxLength, timeToSolve)
+	received, err := strm.ReadUntil(pow.ChallengeMaxLength, timeToSolve)
 	if err != nil {
 		if clientNetworkErr(err) {
 			return nil

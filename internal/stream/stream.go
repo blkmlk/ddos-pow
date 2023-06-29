@@ -29,16 +29,16 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 	buff := make([]byte, chunkSize)
 	var result bytes.Buffer
 
-	if err := s.conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
-		return nil, err
-	}
-
 	read := 0
 	for {
+		if err := s.conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+			return nil, err
+		}
+
 		n, err := s.conn.Read(buff)
 		if err != nil {
 			if e, ok := err.(net.Error); ok && e.Timeout() {
-				return nil, ErrExpired
+				break
 			}
 			if errors.Is(err, io.EOF) {
 				return nil, ErrClosed
@@ -57,6 +57,24 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 		}
 	}
 	return result.Bytes(), nil
+}
+
+func (s *stream) ReadUntil(maxLen int, timeout time.Duration) ([]byte, error) {
+	startedAt := time.Now()
+	for {
+		data, err := s.Read(maxLen, time.Millisecond*50)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(data) > 0 {
+			return data, nil
+		}
+
+		if time.Since(startedAt) > timeout {
+			return nil, ErrExpired
+		}
+	}
 }
 
 func (s *stream) Write(data []byte, timeout time.Duration) error {
