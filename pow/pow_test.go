@@ -18,6 +18,7 @@ func TestPOW(t *testing.T) {
 
 	challenge := p.NewSignedChallenge()
 
+	// find solution
 	startedAt := time.Now()
 	for {
 		solution, err := challenge.GenerateSolution()
@@ -29,4 +30,20 @@ func TestPOW(t *testing.T) {
 		challenge.Salt++
 	}
 	t.Logf("salt %d found in %v", challenge.Salt, time.Since(startedAt))
+
+	valid, err := p.VerifyChallenge(&challenge)
+	require.NoError(t, err)
+	require.True(t, valid)
+
+	// check invalid solution
+	challenge.Salt--
+	solution, err := challenge.GenerateSolution()
+	require.NoError(t, err)
+	require.False(t, pow.VerifySolution(solution, int(challenge.MinZeroes)))
+
+	// check invalid signature
+	challenge.KeyLen = 32
+	valid, err = p.VerifyChallenge(&challenge)
+	require.NoError(t, err)
+	require.False(t, valid)
 }
