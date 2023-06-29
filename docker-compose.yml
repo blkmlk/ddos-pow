@@ -1,10 +1,14 @@
 version: '3'
 services:
   server:
-    image: ddos-pow-server:latest
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
     environment:
       - REST_HOST=:9090
   client:
-    image: ddos-pow-client:latest
+    build:
+      context: .
+      dockerfile: docker/client/Dockerfile
     environment:
       - REST_HOST=server:9090

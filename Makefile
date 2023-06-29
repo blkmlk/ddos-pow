@@ -1,11 +1,11 @@
 .PHONY: build
 build:
-	docker build -f cmd/client/Dockerfile -t ddos-pow-client:latest .
-	docker build -f cmd/server/Dockerfile -t ddos-pow-server:latest .
+	docker build -f docker/client/Dockerfile -t ddos-pow-client:latest .
+	docker build -f docker/server/Dockerfile -t ddos-pow-server:latest .
 
-.PHONY: local-run
-local-run:
-	@echo 'Running local...'
+.PHONY: run
+run:
+	@echo 'Running locally...'
 	docker-compose -p test up
 
 .PHONY: test
