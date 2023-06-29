@@ -34,6 +34,6 @@ func main() {
 			continue
 		}
 
-		log.Infof("successfully got quote: %s", quote)
+		log.Infof("successfully got a quote: %s", quote)
 	}
 }
