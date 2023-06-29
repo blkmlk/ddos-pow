@@ -144,5 +144,9 @@ func clientNetworkErr(err error) bool {
 	if e, ok := err.(net.Error); ok && e.Timeout() {
 		return true
 	}
+	// client is trying to send more than it's required
+	if errors.Is(err, stream.ErrMaxLenExceeded) {
+		return true
+	}
 	return false
 }
