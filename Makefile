@@ -7,3 +7,8 @@ build:
 local-run:
 	@echo 'Running local...'
 	docker-compose -p test up
+
+.PHONY: test
+test:
+	@echo 'Running test...'
+	go test -race -cover -count=1 -v ./...
