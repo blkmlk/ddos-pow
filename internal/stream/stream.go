@@ -3,6 +3,7 @@ package stream
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net"
 	"time"
 )
@@ -12,6 +13,7 @@ type stream struct {
 }
 
 var (
+	ErrClosed         = errors.New("closed")
 	ErrExpired        = errors.New("expired")
 	ErrMaxLenExceeded = errors.New("max length exceeded")
 )
@@ -37,6 +39,9 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 		if err != nil {
 			if e, ok := err.(net.Error); ok && e.Timeout() {
 				return nil, ErrExpired
+			}
+			if errors.Is(err, io.EOF) {
+				return nil, ErrClosed
 			}
 			return nil, err
 		}

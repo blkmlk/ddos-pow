@@ -9,7 +9,6 @@ import (
 	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
 	"go.uber.org/zap"
-	"io"
 	"net"
 	"sync"
 	"time"
@@ -131,7 +130,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 
 func clientNetworkErr(err error) bool {
 	// client closed the connection themselves - close the connection
-	if errors.Is(err, io.EOF) {
+	if errors.Is(err, stream.ErrClosed) {
 		return true
 	}
 	// client is too slow - close the connection

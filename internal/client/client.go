@@ -6,7 +6,6 @@ import (
 	"github.com/blkmlk/ddos-pow/internal/helpers"
 	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
-	"io"
 	"net"
 	"time"
 )
@@ -42,7 +41,7 @@ func (c *Client) GetQuote() (string, error) {
 	// waiting for a new generated challenge
 	data, err := strm.Read(pow.ChallengeMaxLength, AwaitTimeout)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
+		if errors.Is(err, stream.ErrClosed) {
 			return "", ErrTerminated
 		}
 		return "", fmt.Errorf("failed to read challenge from the stream: %v", err)
@@ -75,7 +74,7 @@ func (c *Client) GetQuote() (string, error) {
 	// waiting for a quote
 	rawQuote, err := strm.Read(0, time.Second*5)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
+		if errors.Is(err, stream.ErrClosed) {
 			return "", ErrTerminated
 		}
 		return "", fmt.Errorf("failed to read a quote from the stream: %v", err)
