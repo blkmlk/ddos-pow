@@ -89,15 +89,14 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	}
 
 	// puzzle timeout + network delay
-	timeout := s.powClient.Config.Timeout + NetworkDelay
-	received, err := strm.Read(pow.ChallengeMaxLength, timeout)
+	timeToSolve := challenge.GetExpiresAt().Sub(time.Now()) + NetworkDelay
+	received, err := strm.Read(pow.ChallengeMaxLength, timeToSolve)
 	if err != nil {
 		if clientNetworkErr(err) {
 			return nil
 		}
 		return fmt.Errorf("failed to read challenge: %v", err)
 	}
-	receivedAt := time.Now()
 
 	solvedChallenge, err := helpers.ChallengeFromBytes(received)
 	if err != nil {
@@ -107,11 +106,6 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	// checking if the challenge is not what we just sent
 	if !bytes.Equal(challenge.Signature, solvedChallenge.Signature) {
 		return fmt.Errorf("received a wrong challenge")
-	}
-
-	// checking the solution for expiration
-	if receivedAt.After(solvedChallenge.GetExpiresAt()) {
-		return fmt.Errorf("solution has been expired")
 	}
 
 	valid, err := s.powClient.VerifyChallenge(solvedChallenge)
