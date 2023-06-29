@@ -3,6 +3,7 @@ package stream
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net"
 	"time"
 )
@@ -11,7 +12,12 @@ type stream struct {
 	conn net.Conn
 }
 
+const (
+	NetworkDelay = time.Millisecond * 500
+)
+
 var (
+	ErrExpired        = errors.New("expired")
 	ErrMaxLenExceeded = errors.New("max length exceeded")
 )
 
@@ -33,6 +39,12 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 
 		n, err := s.conn.Read(buff)
 		if err != nil {
+			if e, ok := err.(net.Error); ok && e.Timeout() {
+				break
+			}
+			if errors.Is(err, io.EOF) && read > 0 {
+				break
+			}
 			return nil, err
 		}
 		if n == 0 {
@@ -44,9 +56,26 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 			return nil, ErrMaxLenExceeded
 		}
 		result.Write(buff[:n])
-		buff = buff[:0]
 	}
 	return result.Bytes(), nil
+}
+
+func (s *stream) ReadUntil(maxLen int, timeout time.Duration) ([]byte, error) {
+	startedAt := time.Now()
+	for {
+		data, err := s.Read(maxLen, NetworkDelay)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(data) > 0 {
+			return data, nil
+		}
+
+		if time.Since(startedAt) > timeout {
+			return nil, ErrExpired
+		}
+	}
 }
 
 func (s *stream) Write(data []byte, timeout time.Duration) error {

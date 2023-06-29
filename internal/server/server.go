@@ -90,7 +90,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 
 	// puzzle timeout + network delay
 	timeToSolve := challenge.GetExpiresAt().Sub(time.Now()) + NetworkDelay
-	received, err := strm.Read(pow.ChallengeMaxLength, timeToSolve)
+	received, err := strm.ReadUntil(pow.ChallengeMaxLength, timeToSolve)
 	if err != nil {
 		if clientNetworkErr(err) {
 			return nil
@@ -135,7 +135,7 @@ func clientNetworkErr(err error) bool {
 		return true
 	}
 	// client is too slow - close the connection
-	if e, ok := err.(net.Error); ok && e.Timeout() {
+	if errors.Is(err, stream.ErrExpired) {
 		return true
 	}
 	// client is trying to send more than it's required
