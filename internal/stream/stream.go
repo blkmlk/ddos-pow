@@ -3,7 +3,6 @@ package stream
 import (
 	"bytes"
 	"errors"
-	"io"
 	"net"
 	"time"
 )
@@ -38,9 +37,6 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 		if err != nil {
 			if e, ok := err.(net.Error); ok && e.Timeout() {
 				return nil, ErrExpired
-			}
-			if errors.Is(err, io.EOF) && read > 0 {
-				break
 			}
 			return nil, err
 		}
