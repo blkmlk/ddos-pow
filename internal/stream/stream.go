@@ -44,9 +44,6 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 			}
 			return nil, err
 		}
-		if n == 0 {
-			break
-		}
 
 		read += n
 		if maxLen > 0 && read > maxLen {
