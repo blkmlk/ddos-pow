@@ -25,7 +25,7 @@ func main() {
 		quote, err := c.GetQuote()
 		if err != nil {
 			if errors.Is(err, client.ErrTerminated) {
-				log.Warn("connection has been terminated")
+				log.Info("connection has been terminated")
 				continue
 			}
 			log.Fatal(err)

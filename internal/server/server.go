@@ -50,7 +50,7 @@ func (s *Server) Start() error {
 			defer s.wg.Done()
 			err = s.handleConnection(conn)
 			if err != nil {
-				s.log.Warn(err, "failed to handle connection")
+				s.log.With("error", err.Error()).Info("failed to handle connection")
 			}
 		}()
 	}
@@ -72,16 +72,20 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	data := helpers.ChallengeToBytes(&challenge)
 
 	// sending a new generated challenge
-	if err := strm.Write(data); err != nil {
+	if err := strm.Write(data, time.Second); err != nil {
 		return fmt.Errorf("failed to send challenge to solve: %v", err)
 	}
 
 	// puzzle timeout + network delay
 	timeout := s.powClient.Config.Timeout + time.Millisecond*500
-	received, err := strm.ReadUntil(pow.ChallengeMaxLength, timeout)
+	received, err := strm.Read(pow.ChallengeMaxLength, timeout)
 	if err != nil {
 		// client closed the connection themselves - ignore it
 		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		// client is too slow - close the connection
+		if e, ok := err.(net.Error); ok && e.Timeout() {
 			return nil
 		}
 		return fmt.Errorf("failed to read challenge: %v", err)
@@ -109,7 +113,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 
 	// sending the quote
 	quote := quotes.GetRandomQuote()
-	if err = strm.Write([]byte(quote)); err != nil {
+	if err = strm.Write([]byte(quote), time.Second); err != nil {
 		return fmt.Errorf("failed to send quote: %v", err)
 	}
 
