@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/blkmlk/ddos-pow/internal/helpers"
@@ -96,6 +97,10 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	solvedChallenge, err := helpers.ChallengeFromBytes(received)
 	if err != nil {
 		return fmt.Errorf("failed to get challenge from bytes: %v", err)
+	}
+
+	if !bytes.Equal(challenge.Signature, solvedChallenge.Signature) {
+		return fmt.Errorf("received a wrong challenge")
 	}
 
 	// checking the solution for expiration
