@@ -27,7 +27,9 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 
 	read := 0
 	for {
-		_ = s.conn.SetReadDeadline(time.Now().Add(timeout))
+		if err := s.conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+			return nil, err
+		}
 
 		n, err := s.conn.Read(buff)
 		if err != nil {
@@ -48,7 +50,9 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 }
 
 func (s *stream) Write(data []byte, timeout time.Duration) error {
-	_ = s.conn.SetWriteDeadline(time.Now().Add(timeout))
+	if err := s.conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
+		return err
+	}
 	_, err := s.conn.Write(data)
 	return err
 }
