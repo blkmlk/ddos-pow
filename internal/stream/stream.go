@@ -12,10 +12,6 @@ type stream struct {
 	conn net.Conn
 }
 
-const (
-	NetworkDelay = time.Millisecond * 500
-)
-
 var (
 	ErrExpired        = errors.New("expired")
 	ErrMaxLenExceeded = errors.New("max length exceeded")
@@ -28,19 +24,20 @@ func New(conn net.Conn) *stream {
 }
 
 func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
-	buff := make([]byte, 256)
+	const chunkSize = 256
+	buff := make([]byte, chunkSize)
 	var result bytes.Buffer
+
+	if err := s.conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+		return nil, err
+	}
 
 	read := 0
 	for {
-		if err := s.conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
-			return nil, err
-		}
-
 		n, err := s.conn.Read(buff)
 		if err != nil {
 			if e, ok := err.(net.Error); ok && e.Timeout() {
-				break
+				return nil, ErrExpired
 			}
 			if errors.Is(err, io.EOF) && read > 0 {
 				break
@@ -56,26 +53,12 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 			return nil, ErrMaxLenExceeded
 		}
 		result.Write(buff[:n])
+
+		if n < chunkSize {
+			break
+		}
 	}
 	return result.Bytes(), nil
-}
-
-func (s *stream) ReadUntil(maxLen int, timeout time.Duration) ([]byte, error) {
-	startedAt := time.Now()
-	for {
-		data, err := s.Read(maxLen, NetworkDelay)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(data) > 0 {
-			return data, nil
-		}
-
-		if time.Since(startedAt) > timeout {
-			return nil, ErrExpired
-		}
-	}
 }
 
 func (s *stream) Write(data []byte, timeout time.Duration) error {

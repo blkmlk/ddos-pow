@@ -40,7 +40,7 @@ func (c *Client) GetQuote() (string, error) {
 	strm := stream.New(conn)
 
 	// waiting for a new generated challenge
-	data, err := strm.ReadUntil(pow.ChallengeMaxLength, AwaitTimeout)
+	data, err := strm.Read(pow.ChallengeMaxLength, AwaitTimeout)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return "", ErrTerminated
@@ -73,7 +73,7 @@ func (c *Client) GetQuote() (string, error) {
 	}
 
 	// waiting for a quote
-	rawQuote, err := strm.ReadUntil(0, time.Second*5)
+	rawQuote, err := strm.Read(0, time.Second*5)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return "", ErrTerminated
