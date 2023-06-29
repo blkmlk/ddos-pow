@@ -14,3 +14,8 @@ The leading zeroes check is chosen since I found it commonly used in many public
 ```shell
 make run
 ```
+
+### How to run tests?
+```shell
+make test
+```
