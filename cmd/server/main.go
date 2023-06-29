@@ -30,21 +30,21 @@ func main() {
 		MinZeroes: 12,
 	})
 
-	log.With("host", host).Info("starting the server...")
-
-	if err := s.Start(); err != nil {
-		log.With("error", err).Fatal("failed to start the server")
-	}
-
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGTERM, syscall.SIGKILL)
-
 	go func() {
-		<-ch
-		log.Infof("got signal to stop the server")
+		log.With("host", host).Info("starting the server...")
 
-		if err := s.Stop(); err != nil {
-			log.With("error", err).Fatal("failed to stop the server")
+		if err := s.Start(); err != nil {
+			log.With("error", err).Fatal("failed to start the server")
 		}
 	}()
+
+	ch := make(chan os.Signal, 2)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+
+	<-ch
+	log.Infof("got signal to stop the server")
+
+	if err := s.Stop(); err != nil {
+		log.With("error", err).Fatal("failed to stop the server")
+	}
 }

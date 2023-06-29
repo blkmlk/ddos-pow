@@ -42,6 +42,10 @@ func (s *Server) Start() error {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
+			// server is stopped
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
 			return err
 		}
 
