@@ -97,6 +97,7 @@ func (s *Server) handleConnection(conn net.Conn) error {
 		}
 		return fmt.Errorf("failed to read challenge: %v", err)
 	}
+	receivedAt := time.Now()
 
 	solvedChallenge, err := helpers.ChallengeFromBytes(received)
 	if err != nil {
@@ -108,12 +109,6 @@ func (s *Server) handleConnection(conn net.Conn) error {
 		return fmt.Errorf("received a wrong challenge")
 	}
 
-	// checking the solution for expiration
-	challengeExp := time.Unix(0, solvedChallenge.ExpiresAt)
-	if time.Now().After(challengeExp) {
-		return fmt.Errorf("solution has been expired")
-	}
-
 	valid, err := s.powClient.VerifyChallenge(solvedChallenge)
 	if err != nil {
 		return fmt.Errorf("failed to verify challenge %v", err)
@@ -121,6 +116,11 @@ func (s *Server) handleConnection(conn net.Conn) error {
 
 	if !valid {
 		return fmt.Errorf("solution is not valid")
+	}
+
+	// checking the solution for expiration
+	if receivedAt.After(solvedChallenge.GetExpiresAt()) {
+		return fmt.Errorf("solution has been expired")
 	}
 
 	// sending the quote

@@ -80,6 +80,10 @@ type Challenge struct {
 	Salt      int64
 }
 
+func (c *Challenge) GetExpiresAt() time.Time {
+	return time.Unix(0, c.ExpiresAt)
+}
+
 func (c *Challenge) Sign(secret []byte) []byte {
 	expiresAt := make([]byte, 8)
 	binary.LittleEndian.PutUint64(expiresAt, uint64(c.ExpiresAt))

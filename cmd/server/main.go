@@ -22,7 +22,7 @@ func main() {
 
 	s := server.New(host, pow.Config{
 		Secret:    []byte("secret"),
-		Timeout:   time.Millisecond * 500,
+		Timeout:   time.Second,
 		N:         64,
 		R:         2,
 		P:         1,
