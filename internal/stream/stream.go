@@ -2,6 +2,7 @@ package stream
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"io"
 	"net"
@@ -13,6 +14,7 @@ type stream struct {
 }
 
 var (
+	ErrInvalidFormat  = errors.New("invalid format")
 	ErrClosed         = errors.New("closed")
 	ErrExpired        = errors.New("expired")
 	ErrMaxLenExceeded = errors.New("max length exceeded")
@@ -25,56 +27,54 @@ func New(conn net.Conn) *stream {
 }
 
 func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
-	const chunkSize = 256
-	buff := make([]byte, chunkSize)
-	var result bytes.Buffer
-
-	read := 0
-	for {
-		if err := s.conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
-			return nil, err
-		}
-
-		n, err := s.conn.Read(buff)
-		if err != nil {
-			if e, ok := err.(net.Error); ok && e.Timeout() {
-				break
-			}
-			if errors.Is(err, io.EOF) {
-				return nil, ErrClosed
-			}
-			return nil, err
-		}
-
-		read += n
-		if maxLen > 0 && read > maxLen {
-			return nil, ErrMaxLenExceeded
-		}
-		result.Write(buff[:n])
-
-		if n < chunkSize {
-			break
-		}
+	if err := s.conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+		return nil, err
 	}
-	return result.Bytes(), nil
-}
+	defer func() {
+		_ = s.conn.SetReadDeadline(time.Time{})
+	}()
 
-func (s *stream) ReadUntil(maxLen int, timeout time.Duration) ([]byte, error) {
-	startedAt := time.Now()
-	for {
-		data, err := s.Read(maxLen, time.Millisecond*50)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(data) > 0 {
-			return data, nil
-		}
-
-		if time.Since(startedAt) > timeout {
+	sizeBuff := make([]byte, 2)
+	n, err := s.conn.Read(sizeBuff)
+	if err != nil {
+		if e, ok := err.(net.Error); ok && e.Timeout() {
 			return nil, ErrExpired
 		}
+		if errors.Is(err, io.EOF) {
+			return nil, ErrClosed
+		}
+		return nil, err
 	}
+	if n != 2 {
+		return nil, ErrInvalidFormat
+	}
+
+	size := binary.LittleEndian.Uint16(sizeBuff)
+
+	if maxLen > 0 && int(size) > maxLen {
+		return nil, ErrMaxLenExceeded
+	}
+
+	buff := make([]byte, size)
+	var result bytes.Buffer
+
+	n, err = s.conn.Read(buff)
+	if err != nil {
+		if e, ok := err.(net.Error); ok && e.Timeout() {
+			return nil, ErrExpired
+		}
+		if errors.Is(err, io.EOF) {
+			return nil, ErrClosed
+		}
+		return nil, err
+	}
+	if n != int(size) {
+		return nil, ErrInvalidFormat
+	}
+
+	result.Write(buff[:n])
+
+	return result.Bytes(), nil
 }
 
 func (s *stream) Write(data []byte, timeout time.Duration) error {
