@@ -10,6 +10,7 @@ import (
 
 func TestPOW(t *testing.T) {
 	p := New(Config{
+		Secret:    []byte("secret"),
 		N:         64,
 		R:         2,
 		P:         1,

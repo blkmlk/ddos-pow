@@ -1,12 +1,7 @@
 package pow
 
 import (
-	"errors"
 	"time"
-)
-
-var (
-	ErrExpired = errors.New("expired")
 )
 
 type Challenge interface {

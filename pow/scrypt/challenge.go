@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"fmt"
 	"github.com/blkmlk/ddos-pow/pow"
 	"golang.org/x/crypto/scrypt"
 	"math/big"
@@ -47,15 +48,15 @@ func (c *Challenge) FindSolution(timeout time.Duration) error {
 			return err
 		}
 
+		if timeout > 0 && time.Since(startedAt) > timeout {
+			return fmt.Errorf("time is out")
+		}
+
 		// solution is found
 		if verifySolution(solution, int(c.MinZeroes)) {
 			break
 		}
 		c.Salt++
-
-		if timeout > 0 && time.Since(startedAt) > timeout {
-			return pow.ErrExpired
-		}
 	}
 	return nil
 }
