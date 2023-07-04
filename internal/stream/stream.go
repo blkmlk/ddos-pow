@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"math"
 	"net"
 	"time"
 )
@@ -34,16 +35,11 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 		_ = s.conn.SetReadDeadline(time.Time{})
 	}()
 
+	// get the size of the message first
 	sizeBuff := make([]byte, 2)
 	n, err := s.conn.Read(sizeBuff)
 	if err != nil {
-		if e, ok := err.(net.Error); ok && e.Timeout() {
-			return nil, ErrExpired
-		}
-		if errors.Is(err, io.EOF) {
-			return nil, ErrClosed
-		}
-		return nil, err
+		return nil, handleError(err)
 	}
 	if n != 2 {
 		return nil, ErrInvalidFormat
@@ -55,18 +51,13 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 		return nil, ErrMaxLenExceeded
 	}
 
+	// waiting for the message
 	buff := make([]byte, size)
 	var result bytes.Buffer
 
 	n, err = s.conn.Read(buff)
 	if err != nil {
-		if e, ok := err.(net.Error); ok && e.Timeout() {
-			return nil, ErrExpired
-		}
-		if errors.Is(err, io.EOF) {
-			return nil, ErrClosed
-		}
-		return nil, err
+		return nil, handleError(err)
 	}
 	if n != int(size) {
 		return nil, ErrInvalidFormat
@@ -78,9 +69,34 @@ func (s *stream) Read(maxLen int, timeout time.Duration) ([]byte, error) {
 }
 
 func (s *stream) Write(data []byte, timeout time.Duration) error {
+	if len(data) > math.MaxUint16 {
+		return ErrInvalidFormat
+	}
 	if err := s.conn.SetWriteDeadline(time.Now().Add(timeout)); err != nil {
 		return err
 	}
-	_, err := s.conn.Write(data)
+	defer func() {
+		_ = s.conn.SetReadDeadline(time.Time{})
+	}()
+
+	sizeBuff := make([]byte, 2)
+	binary.LittleEndian.PutUint16(sizeBuff, uint16(len(data)))
+	if _, err := s.conn.Write(sizeBuff); err != nil {
+		return handleError(err)
+	}
+
+	if _, err := s.conn.Write(data); err != nil {
+		return handleError(err)
+	}
+	return nil
+}
+
+func handleError(err error) error {
+	if e, ok := err.(net.Error); ok && e.Timeout() {
+		return ErrExpired
+	}
+	if errors.Is(err, io.EOF) {
+		return ErrClosed
+	}
 	return err
 }
