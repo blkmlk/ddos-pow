@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
-	"github.com/blkmlk/ddos-pow/pow/scrypt"
 	"net"
 	"time"
 )
@@ -24,10 +23,10 @@ type Client struct {
 	pow  pow.POW
 }
 
-func New(host string) *Client {
+func New(host string, pow pow.POW) *Client {
 	return &Client{
 		host: host,
-		pow:  scrypt.New(scrypt.Config{}),
+		pow:  pow,
 	}
 }
 
