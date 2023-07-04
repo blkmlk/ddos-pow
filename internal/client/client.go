@@ -3,7 +3,6 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/blkmlk/ddos-pow/internal/helpers"
 	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
 	"net"
@@ -15,16 +14,19 @@ var (
 )
 
 const (
-	AwaitTimeout = time.Second * 5
+	AwaitTimeout        = time.Second * 5
+	FindSolutionTimeout = time.Second
 )
 
 type Client struct {
 	host string
+	pow  pow.POW
 }
 
-func New(host string) *Client {
+func New(host string, pow pow.POW) *Client {
 	return &Client{
 		host: host,
+		pow:  pow,
 	}
 }
 
@@ -39,7 +41,7 @@ func (c *Client) GetQuote() (string, error) {
 	strm := stream.New(conn)
 
 	// waiting for a new generated challenge
-	data, err := strm.Read(pow.ChallengeMaxLength, AwaitTimeout)
+	data, err := strm.Read(0, AwaitTimeout)
 	if err != nil {
 		if errors.Is(err, stream.ErrClosed) {
 			return "", ErrTerminated
@@ -47,27 +49,18 @@ func (c *Client) GetQuote() (string, error) {
 		return "", fmt.Errorf("failed to read challenge from the stream: %v", err)
 	}
 
-	challenge, err := helpers.ChallengeFromBytes(data)
+	challenge, err := c.pow.ParseChallenge(data)
 	if err != nil {
 		return "", fmt.Errorf("failed to get challenge from bytes: %v", err)
 	}
 
 	// looking for the solution
-	for {
-		solution, err := challenge.GenerateSolution()
-		if err != nil {
-			return "", err
-		}
-
-		// solution is found
-		if pow.VerifySolution(solution, int(challenge.MinZeroes)) {
-			break
-		}
-		challenge.Salt++
+	if err = challenge.FindSolution(FindSolutionTimeout); err != nil {
+		return "", fmt.Errorf("failed to find a solution")
 	}
 
 	// sending the solution for verification
-	if err = strm.Write(helpers.ChallengeToBytes(challenge), time.Second); err != nil {
+	if err = strm.Write(challenge.Bytes(), time.Second); err != nil {
 		return "", fmt.Errorf("failed to send the solution: %v", err)
 	}
 

@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/server"
-	"github.com/blkmlk/ddos-pow/pow"
+	"github.com/blkmlk/ddos-pow/pow/scrypt"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
@@ -20,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	s := server.New(host, pow.Config{
+	scryptPow := scrypt.New(scrypt.Config{
 		Secret:    []byte("secret"),
 		Timeout:   time.Second,
 		N:         64,
@@ -29,6 +29,8 @@ func main() {
 		KeyLen:    16,
 		MinZeroes: 12,
 	})
+
+	s := server.New(host, scryptPow)
 
 	go func() {
 		log.With("host", host).Info("starting the server...")

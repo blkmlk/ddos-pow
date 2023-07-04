@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/blkmlk/ddos-pow/env"
 	"github.com/blkmlk/ddos-pow/internal/client"
+	"github.com/blkmlk/ddos-pow/pow/scrypt"
 	"go.uber.org/zap"
 	"time"
 )
@@ -17,7 +18,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	c := client.New(host)
+	powVerifier := scrypt.New(scrypt.Config{})
+
+	c := client.New(host, powVerifier)
 
 	log.Info("starting the client...")
 

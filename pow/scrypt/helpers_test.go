@@ -1,16 +1,15 @@
-package helpers
+package scrypt
 
 import (
-	"github.com/blkmlk/ddos-pow/pow"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestChallengeFromToBytes(t *testing.T) {
-	puzzle := pow.GeneratePuzzle()
-	origin := pow.Challenge{
+	puzzle := generatePuzzle()
+	origin := Challenge{
 		Puzzle:    puzzle,
-		ExpiresAt: 2000,
+		ExpAt:     2000,
 		N:         64,
 		R:         2,
 		P:         1,
@@ -18,11 +17,11 @@ func TestChallengeFromToBytes(t *testing.T) {
 		MinZeroes: 15,
 		Salt:      100,
 	}
-	origin.Signature = origin.Sign([]byte("secret"))
+	origin.Signature = origin.sign([]byte("secret"))
 
-	data := ChallengeToBytes(&origin)
+	data := challengeToBytes(&origin)
 
-	recovered, err := ChallengeFromBytes(data)
+	recovered, err := challengeFromBytes(data)
 	require.NoError(t, err)
 
 	require.Equal(t, &origin, recovered)
