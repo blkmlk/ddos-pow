@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	Host = "REST_HOST"
+	Host = "HOST"
 )
 
 func NewErrNotSet(env string) error {
@@ -19,12 +19,4 @@ func Get(key string) (string, error) {
 		return "", NewErrNotSet(key)
 	}
 	return value, nil
-}
-
-func GetOptional(key string, optional string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return optional
-	}
-	return value
 }

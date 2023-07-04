@@ -5,10 +5,10 @@ services:
       context: .
       dockerfile: docker/server/Dockerfile
     environment:
-      - REST_HOST=:9090
+      - HOST=:9090
   client:
     build:
       context: .
       dockerfile: docker/client/Dockerfile
     environment:
-      - REST_HOST=server:9090
+      - HOST=server:9090
