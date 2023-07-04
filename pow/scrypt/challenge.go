@@ -1,8 +1,10 @@
 package scrypt
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"github.com/blkmlk/ddos-pow/pow"
 	"golang.org/x/crypto/scrypt"
 	"math/big"
 	"time"
@@ -20,6 +22,15 @@ type Challenge struct {
 	Salt      int64
 }
 
+func (c *Challenge) Equals(inCh pow.Challenge) bool {
+	ch, ok := inCh.(*Challenge)
+	if !ok {
+		return false
+	}
+
+	return bytes.Equal(c.Signature, ch.Signature)
+}
+
 func (c *Challenge) ExpiresAt() time.Time {
 	return time.Unix(0, c.ExpAt)
 }
@@ -28,7 +39,8 @@ func (c *Challenge) Bytes() []byte {
 	return challengeToBytes(c)
 }
 
-func (c *Challenge) FindSolution() error {
+func (c *Challenge) FindSolution(timeout time.Duration) error {
+	startedAt := time.Now()
 	for {
 		solution, err := c.generateSolution()
 		if err != nil {
@@ -40,6 +52,10 @@ func (c *Challenge) FindSolution() error {
 			break
 		}
 		c.Salt++
+
+		if timeout > 0 && time.Since(startedAt) > timeout {
+			return pow.ErrExpired
+		}
 	}
 	return nil
 }

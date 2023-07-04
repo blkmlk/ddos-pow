@@ -21,7 +21,7 @@ func TestPOW(t *testing.T) {
 
 	// find solution
 	startedAt := time.Now()
-	require.NoError(t, challenge.FindSolution())
+	require.NoError(t, challenge.FindSolution(time.Second))
 	t.Logf("solution found in %v", time.Since(startedAt))
 
 	valid, err := p.VerifyChallenge(challenge)

@@ -1,10 +1,8 @@
 package server
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"github.com/blkmlk/ddos-pow/internal/helpers"
 	"github.com/blkmlk/ddos-pow/internal/quotes"
 	"github.com/blkmlk/ddos-pow/internal/stream"
 	"github.com/blkmlk/ddos-pow/pow"
@@ -20,18 +18,18 @@ const (
 
 type Server struct {
 	host      string
-	powClient *pow.POW
+	powClient pow.POW
 	listener  net.Listener
 	wg        sync.WaitGroup
 	log       *zap.SugaredLogger
 }
 
-func New(host string, config pow.Config) *Server {
+func New(host string, powClient pow.POW) *Server {
 	logDev, _ := zap.NewDevelopment()
 
 	return &Server{
 		host:      host,
-		powClient: pow.New(config),
+		powClient: powClient,
 		log:       logDev.Sugar(),
 	}
 }
@@ -76,8 +74,8 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	defer conn.Close()
 	strm := stream.New(conn)
 
-	challenge := s.powClient.NewSignedChallenge()
-	data := helpers.ChallengeToBytes(&challenge)
+	challenge := s.powClient.NewChallenge()
+	data := challenge.Bytes()
 
 	// sending a new generated challenge
 	if err := strm.Write(data, NetworkDelay); err != nil {
@@ -88,8 +86,8 @@ func (s *Server) handleConnection(conn net.Conn) error {
 	}
 
 	// puzzle timeout + network delay
-	timeToSolve := challenge.GetExpiresAt().Sub(time.Now()) + NetworkDelay
-	received, err := strm.Read(pow.ChallengeMaxLength, timeToSolve)
+	timeToSolve := challenge.ExpiresAt().Sub(time.Now()) + NetworkDelay
+	received, err := strm.Read(len(data), timeToSolve)
 	if err != nil {
 		if clientNetworkErr(err) {
 			return nil
@@ -97,16 +95,17 @@ func (s *Server) handleConnection(conn net.Conn) error {
 		return fmt.Errorf("failed to read challenge: %v", err)
 	}
 
-	solvedChallenge, err := helpers.ChallengeFromBytes(received)
+	solvedChallenge, err := s.powClient.ParseChallenge(received)
 	if err != nil {
 		return fmt.Errorf("failed to get challenge from bytes: %v", err)
 	}
 
 	// checking if the challenge is not what we just sent
-	if !bytes.Equal(challenge.Signature, solvedChallenge.Signature) {
+	if !challenge.Equals(solvedChallenge) {
 		return fmt.Errorf("received a wrong challenge")
 	}
 
+	// checking if the solution is correct
 	valid, err := s.powClient.VerifyChallenge(solvedChallenge)
 	if err != nil {
 		return fmt.Errorf("failed to verify challenge %v", err)

@@ -1,10 +1,18 @@
 package pow
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var (
+	ErrExpired = errors.New("expired")
+)
 
 type Challenge interface {
+	Equals(ch Challenge) bool
 	ExpiresAt() time.Time
-	FindSolution() error
+	FindSolution(timeout time.Duration) error
 	Bytes() []byte
 }
 
